@@ -11,7 +11,7 @@ except:
     print("driver was now found by this route")
 
 try:
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome(executable_path=machine.install_path)
 except:
     print("driver pet was not lifted")
 
