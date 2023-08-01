@@ -7,6 +7,17 @@ except:
     print("importer has error")
 
 try:
-    chromedriver_autoinstaller.install()
+    machine = chromedriver_autoinstaller.install()
 except:
     print("driver was now found by this route")
+
+try:
+    driver = webdriver.Chrome(service=Service(machine))
+except:
+    print("driver pet was not lifted")
+
+try:
+    driver.get("https://www.google.com")
+    print("omg cloud saw google")
+except:
+    print("wizard didn't play well")
