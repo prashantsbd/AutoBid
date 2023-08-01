@@ -3,7 +3,8 @@ try:
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
     import chromedriver_autoinstaller
-    from pyvirtualdisplay import Display
+    # from pyvirtualdisplay import Display
+    #          pip install pyvirtualdisplay
 
 
 except:
@@ -11,15 +12,17 @@ except:
 
 try:
     chromedriver_autoinstaller.install()
+    options = Options()
+    options.headless = True
 except:
     print("inst failed")
 
 
 try:
-    display = Display(visible=0, size=(800, 800))
-    display.start()
+    # display = Display(visible=0, size=(800, 800))
+    # display.start()
 
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome(Options=options)
 except:
     print("driver pet was not lifted")
 
