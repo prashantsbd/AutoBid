@@ -1,17 +1,14 @@
 try:
     import selenium
     from selenium import webdriver
-    import chromedriver_autoinstaller
+    from selenium.webdriver.chrome.service import Service
+    from webdriver_manager.chrome import ChromeDriverManager
+
 except:
     print("importer has error")
 
 try:
-    machine = chromedriver_autoinstaller.install()
-except:
-    print("driver was now found by this route")
-
-try:
-    driver = webdriver.Chrome(executable_path=machine.install_path)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 except:
     print("driver pet was not lifted")
 
