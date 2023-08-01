@@ -1,0 +1,14 @@
+name: Hello world
+
+on:
+  schedule:
+    cron: '*/5 * * * *'
+
+
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: hello step
+      run: echo "hello world"
