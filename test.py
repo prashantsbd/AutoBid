@@ -3,13 +3,11 @@ try:
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
     import chromedriver_autoinstaller
-    # from pyvirtualdisplay import Display
-#          pip install chromedriver-autoinstaller
-#          pip install pyvirtualdisplay
+    from pyvirtualdisplay import Display
+
 
 except:
     print("importer has error")
-
 try:
     chromedriver_autoinstaller.install()
 except:
@@ -17,8 +15,8 @@ except:
 
 
 try:
-    # display = Display(visible=0, size=(800, 800))
-    # display.start()
+    display = Display(visible=0, size=(800, 800))
+    display.start()
 
     driver = webdriver.Chrome()
 except:
