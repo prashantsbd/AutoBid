@@ -4,7 +4,8 @@ try:
     from selenium.webdriver.chrome.service import Service
     import chromedriver_autoinstaller
     from pyvirtualdisplay import Display
-
+#          pip install chromedriver-autoinstaller
+#          pip install pyvirtualdisplay
 
 except:
     print("importer has error")

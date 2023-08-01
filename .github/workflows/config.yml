@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
+      - uses: nanasess/setup-chromedriver@v2.1.1
+      - name: setup-chromedriver
+
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
@@ -26,8 +29,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install selenium 
-          pip install chromedriver-autoinstaller
-          pip install pyvirtualdisplay
+
 
       - name: Test code
         run: |
