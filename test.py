@@ -12,8 +12,8 @@ except:
 
 try:
     chromedriver_autoinstaller.install()
-    options = Options()
-    options.headless = True
+    option = Options()
+    option.add_argument('--headless')
 except:
     print("inst failed")
 
@@ -22,7 +22,7 @@ try:
     # display = Display(visible=0, size=(800, 800))
     # display.start()
 
-    driver = webdriver.Chrome(Options=options)
+    driver = webdriver.Chrome(Options=option)
 except:
     print("driver pet was not lifted")
 
