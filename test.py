@@ -18,7 +18,7 @@ try:
     display = Display(visible=0, size=(800, 800))
     display.start()
 
-    driver = webdriver.Chrome(executable_path=ChromeDriverManager("2.42").install())
+    driver = webdriver.Chrome()
 except:
     print("driver pet was not lifted")
 
