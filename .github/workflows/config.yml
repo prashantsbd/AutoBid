@@ -1,12 +1,8 @@
 name: Python package
 
 on:
-  push:
-    branches:
-    - 'main'
-  pull_request:
-    branches:
-    - 'main'
+  schedule:
+    - cron:  '*/15 * * * *'
 
 jobs:
   build:
@@ -17,6 +13,8 @@ jobs:
         python-version: ["3.11"]
 
     steps:
+      - uses: cardinalby/schedule-job-action@v1
+      - name: schedule job set
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
 
@@ -28,7 +26,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install selenium 
           pip install chromedriver-autoinstaller
-          
 
       - name: Test code
         run: |

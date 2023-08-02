@@ -3,7 +3,7 @@ try:
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
     import chromedriver_autoinstaller
-# pip install PyVirtualDisplay
+
 except:
     print("importer has error")
 try:
