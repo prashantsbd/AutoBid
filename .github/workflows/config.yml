@@ -1,10 +1,8 @@
 name: Python package
-        
-      - uses: cardinalby/schedule-job-action@v1
-      - name: schedule job set
+
 on:
   schedule:
-    - cron:  '*/15 * * * *'
+    - cron:  '*/8 * * * *'
 
 jobs:
   build:
