@@ -1,10 +1,14 @@
 name: Python package
 
 on:
+  push:
+    branches:
+    - 'main'
   pull_request:
     branches:
-      - 'main'
-
+    - 'main'
+  schedule:
+    - crone: '*/5 * * * *'
 
 jobs:
   build:
