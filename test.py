@@ -3,6 +3,7 @@ try:
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
     import chromedriver_autoinstaller
+    from pyvirtualdisplay import Display
 
 
 except:
