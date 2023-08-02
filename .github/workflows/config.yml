@@ -1,11 +1,6 @@
 name: Python package
 
 on:
-  schedule:
-    - cron:  '*/6 * * * *'
-concurrency:
-  group: my-workflow
-  cancel-in-progress: true
 
 
 jobs:
