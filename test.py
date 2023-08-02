@@ -23,6 +23,7 @@ try:
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-webgl")
     driver = webdriver.Chrome(options=option)
+    # new push
     # display = Display(visible=0, size=(800, 800))
     # display.start()
     # driver = webdriver.Chrome()
