@@ -3,7 +3,6 @@ try:
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
     import chromedriver_autoinstaller
-    from pyvirtualdisplay import Display
 
 
 except:
@@ -22,8 +21,6 @@ try:
     option.add_argument("--disable-blink-features=AutomationControlled")
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-webgl")
-    # display = Display(visible=0, size=(800, 800))
-    # display.start()
     driver = webdriver.Chrome(options=option)
 except:
     print("driver pet was not lifted")
