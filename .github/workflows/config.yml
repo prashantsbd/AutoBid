@@ -1,9 +1,11 @@
 name: Python package
 
 on:
-  pull_request:
-    branches:
-      - 'main'
+  schedule:
+    - cron:  '*/6 * * * *'
+concurrency:
+  group: my-workflow
+  cancel-in-progress: true
 
 
 jobs:
