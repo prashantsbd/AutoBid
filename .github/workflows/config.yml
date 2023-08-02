@@ -28,7 +28,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install selenium 
           pip install chromedriver-autoinstaller
-          pip install PyVirtualDisplay
+          
 
       - name: Test code
         run: |
