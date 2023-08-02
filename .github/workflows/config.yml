@@ -1,9 +1,9 @@
 name: Python package
 
 on:
-  schedule: ## Schedule the job to run at a particular time.
-    # * is a special character in YAML so you have to quote this string
-    - cron:  '0 0 * * *'
+  pull_request:
+    branches:
+      - 'main'
 
 
 jobs:
