@@ -1,7 +1,8 @@
 name: Python package
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '15 6 * * 0,3'
 
 jobs:
   build:
