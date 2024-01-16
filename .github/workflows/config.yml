@@ -1,0 +1,42 @@
+name: Meroshare IPO filler
+
+on:
+    schedule:
+        - cron: '15 6 * * 0,3'
+    workflow_dispatch:
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    IPOFiller:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                python-version: ['3.11']
+
+        env:
+            User: ${{ secrets.USER }}
+            cptl: ${{ secrets.CPTL }}
+            ClientID: ${{ secrets.CLIENDID }}
+            Password: ${{ secrets.PASSWORD }}
+            MPin: ${{ secrets.MPIN }}
+            CRN: ${{ secrets.CRN }}
+            URL: ${{ secrets.URL }}
+
+        steps:
+            - uses: actions/checkout@4
+            - name: set-up python base environment
+              uses: actions/setup-python@v4
+              with:
+                python-version: ${{ matrix.python-version }}
+            - name: Install Necessary Dependencies
+              run: |
+                python -m pip install --upgrade pip
+                pip install selenium
+                pip install python-dotenv
+                pip install tabulate
+            - name: Fill up process
+              run: python ./fintech.py
