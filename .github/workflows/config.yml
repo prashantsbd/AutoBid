@@ -20,7 +20,7 @@ jobs:
         env:
             User: ${{ secrets.USER }}
             cptl: ${{ secrets.CPTL }}
-            ClientID: ${{ secrets.CLIENDID }}
+            ClientID: ${{ secrets.CLIENTID }}
             Password: ${{ secrets.PASSWORD }}
             MPin: ${{ secrets.MPIN }}
             CRN: ${{ secrets.CRN }}
