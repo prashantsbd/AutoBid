@@ -116,8 +116,7 @@ def DB_call():
     data = list(zip(User, Status))
     headers = ['USER', 'STATUS']
     table = tabulate(data, headers=headers, tablefmt='grid')
-    print(table)
-    return 1
+    return table
     # data = list(zip(User, ClientID, Password, CRN, MPin, Status))
     # headers = ['USER', 'ID', 'PASSWORD', 'CRN', 'MPIN', 'STATUS']
 
@@ -143,7 +142,8 @@ def add_to_report():
 
 
 def terminator():
-    DB_call()
+    dashboard = DB_call()
+    print(dashboard)
     print(time.time() - start_time)
     quit()
 
