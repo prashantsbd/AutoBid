@@ -159,7 +159,8 @@ def bot_send_msg(admin_msg):
     message = {
         'content': admin_msg
     }
-    bot_url = 'https://discord.com/api/webhooks/' + os.getenv("WEBHOOK_TOKEN")
+    # bot_url = 'https://discord.com/api/webhooks/' + os.getenv("WEBHOOK_TOKEN")
+    bot_url = os.getenv("WEBHOOK_TOKEN")
     headers = {
         'Content-Type': 'application/json',
     }
