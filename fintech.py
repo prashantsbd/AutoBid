@@ -116,7 +116,7 @@ def clear_toast():
 def DB_call():
     data = list(zip(User, Status))
     headers = ['USER', 'STATUS']
-    table = tabulate(data, headers=headers, tablefmt='grid')
+    table = tabulate(data, headers=headers, tablefmt='rst', colalign=("left", "center"))
     return table
     # data = list(zip(User, ClientID, Password, CRN, MPin, Status))
     # headers = ['USER', 'ID', 'PASSWORD', 'CRN', 'MPIN', 'STATUS']
