@@ -1,5 +1,6 @@
 import os
 import time
+import requests
 from tabulate import tabulate
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -141,11 +142,29 @@ def add_to_report():
         Status.insert(w, each_status)
 
 
-def terminator():
+def terminator(admin_msg):
     dashboard = DB_call()
-    print(dashboard)
-    print(time.time() - start_time)
+    admin_msg += msg_formatter(dashboard)
+    admin_msg += msg_formatter(time.time() - start_time)
+    bot_send_msg(admin_msg)
     quit()
+
+
+def msg_formatter(message):
+    tmp_msg = f"{message}\n"
+    return tmp_msg
+
+
+def bot_send_msg(admin_msg):
+    message = {
+        'content': admin_msg
+    }
+    bot_url = 'https://discord.com/api/webhooks/' + os.getenv("WEBHOOK_TOKEN")
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    response = requests.post(url=bot_url, json=message, headers=headers)
+    return 1
 
 
 driver = chrome_setup()
@@ -159,6 +178,7 @@ MPin = envcall("MPin")
 CRN = envcall("CRN")
 url = envcall("URL")
 Status = []
+admin_msg = ""
 dashboard_url = url[0]
 renew_url = [url[1], url[4]]
 # demat/demat and meroshare
@@ -203,18 +223,18 @@ for element in ClientID:
         elif driver.current_url == renew_url[0] or renew_url[1]:
             if driver.current_url == renew_url[0]:
                 Status.append("Demat Renew")
-                print(f"{w + 1}: Renew Demat: {ClientID[w]}, User:{User[w]}\nPrice: 100")
+                admin_msg += msg_formatter(f"{w + 1}: Renew Demat: {ClientID[w]}, User:{User[w]}\nPrice: 100")
             else:
                 Status.append("Renew all")
-                print(f"{w + 1}: Renew Demat and Meroshare: {ClientID[w]}, User:{User[w]}\nPrice: 150")
+                admin_msg += msg_formatter(f"{w + 1}: Renew Demat and Meroshare: {ClientID[w]}, User:{User[w]}\nPrice: 150")
             # CASE: mail garna paryo
             driver.get(initial_url)
             continue
         elif driver.current_url == password_forced_url:
-            print(f"{User[w]} ko password ko lagi kam garna paryo")
+            admin_msg += msg_formatter(f"{User[w]} ko password ko lagi kam garna paryo")
             dynamic_pw_change(cptl[w], ClientID[w], Password[w], User[w])
         else:
-            print({driver.current_url})
+            admin_msg += msg_formatter({driver.current_url})
             driver.get(initial_url)
             continue
         driver.implicitly_wait(2)
@@ -222,7 +242,7 @@ for element in ClientID:
             driver.find_element(By.LINK_TEXT, "My ASBA").is_displayed()
         except:
             driver.refresh()
-            print("Dashboard was only visible master")
+            admin_msg += msg_formatter("Dashboard was only visible master")
             driver.implicitly_wait(3)
 
         # clear_toast()
@@ -251,11 +271,11 @@ for element in ClientID:
                 elif button.text == "Edit":
                     each_status.append("Self")
                     add_to_report()
-                    print(f"already applied of {User[w]}")
+                    admin_msg += msg_formatter(f"already applied of {User[w]}")
                     apply_count += 1
                     continue
                 else:
-                    print("Warning")
+                    admin_msg += msg_formatter("Warning")
             else:
                 each_status.append("NULL")
                 add_to_report()
@@ -269,7 +289,7 @@ for element in ClientID:
             PPS = driver.find_element(By.XPATH, "//div[@class='col-md-4'][5]//span").text
             if minimum > float(PPS) or float(PPS) > maximum:
                 driver.back()
-                print(f"Unaffordable->{float(PPS)}")
+                admin_msg += msg_formatter(f"Unaffordable->{float(PPS)}")
                 each_status.append(f"Unaffordable->{float(PPS)}")
                 add_to_report()
                 clear_toast()
@@ -277,27 +297,27 @@ for element in ClientID:
             elif float(PPS) in range(minimum, maximum):
                 pass
             else:
-                print("unknown error occured")
+                admin_msg += msg_formatter("unknown error occured")
                 quit()
             apply_ipo(CRN[w], MPin[w])
             apply_count += 1
             # TASK: see the toast msg and optimize
-            print(f"{w+1}: applied: {share}, user: {User[w]}")
+            admin_msg += msg_formatter(f"{w+1}: applied: {share}, user: {User[w]}")
             # CASE: paisa xa ke nai herna paryo
             clear_toast()
             each_status.append("Success")
             add_to_report()
         if i == 0 or apply_count == 0:
-            print("NO OFFERING")
+            admin_msg += msg_formatter("NO OFFERING")
             if w >= len(Status):
                 each_status.append("NO OFFERING")
                 add_to_report()
             else:
                 Status[w] = "NO OFFERING"
-            terminator()
+            terminator(admin_msg)
         driver.find_element(By.XPATH, "//ul[@class='header-menu__list']/li[1]/a").click()
     except Exception as e:
-        print(f"WARNING: exception occured for {ClientID[w]}, {User[w]}")
+        admin_msg += msg_formatter(f"WARNING: exception occured for {ClientID[w]}, {User[w]}")
         if Status[w] is None:
             User.append(User[w])
             cptl.append(cptl[w])
@@ -307,4 +327,4 @@ for element in ClientID:
             CRN.append(CRN[w])
             Status.append("exception")
         driver.get(initial_url)
-terminator()
+terminator(admin_msg)

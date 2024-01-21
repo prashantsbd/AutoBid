@@ -25,6 +25,7 @@ jobs:
             MPin: ${{ secrets.MPIN }}
             CRN: ${{ secrets.CRN }}
             URL: ${{ secrets.URL }}
+            WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
 
         steps:
             - uses: actions/checkout@v4
@@ -38,5 +39,6 @@ jobs:
                 pip install selenium
                 pip install python-dotenv
                 pip install tabulate
+                pip install requests
             - name: Fill up process
               run: python ./fintech.py
