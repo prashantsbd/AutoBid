@@ -164,6 +164,8 @@ def bot_send_msg(admin_msg):
     headers = {
         'Content-Type': 'application/json',
     }
+    response = requests.post(url=bot_url, json=message, headers=headers)
+    print(response)
     return 1
 
 
