@@ -3,11 +3,11 @@ name: Meroshare IPO filler
 on:
     schedule:
         - cron: '15 6 * * 0,3'
+    workflow_dispatch:
 
 defaults:
     run:
         shell: bash
-    workflow_dispatch:
 
 jobs:
     IPOFiller:
