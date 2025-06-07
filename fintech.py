@@ -315,7 +315,7 @@ for element in ClientID:
                 add_to_report()
             else:
                 Status[w] = "NO OFFERING"
-            terminator(admin_msg)
+            # terminator(admin_msg)
         driver.find_element(By.XPATH, "//ul[@class='header-menu__list']/li[1]/a").click()
     except Exception as e:
         admin_msg += msg_formatter(f"WARNING: exception occured for {ClientID[w]}, {User[w]}")
