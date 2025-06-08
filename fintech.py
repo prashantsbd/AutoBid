@@ -85,6 +85,11 @@ def apply_ipo(crn, mpin):
     WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "selectBank")))
     driver.find_element(By.ID, "selectBank").click()
     driver.find_element(By.XPATH, "//select[@id='selectBank']/option[2]").click()
+    WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.CSS_SELECTOR, "#accountNumber"))
+    )
+    driver.find_element(By.ID, "accountNumber").click()
+    driver.find_element(By.XPATH, "//select[@id='accountNumber']/option[2]").click()
     driver.find_element(By.ID, "appliedKitta").send_keys(10)
     driver.find_element(By.ID, "crnNumber").send_keys(crn)
     driver.find_element(By.ID, "disclaimer").click()
