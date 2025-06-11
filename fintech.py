@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException
 
 
 def envcall(array):
@@ -190,9 +191,21 @@ renew_url = [url[1], url[4]]
 # demat/demat and meroshare
 password_forced_url = url[2]
 initial_url = url[3]
+patience = 50
+
+driver.set_page_load_timeout(patience)
 
 # Ordinary Shares / Debentures / Close Ended Mutual Fund
-driver.get(initial_url)
+max_attempts = 3
+for attempt in range(1, max_attempts + 1):
+    try:
+        driver.get(initial_url)
+        break  # Exit loop if successful
+    except TimeoutException as e:
+        admin_msg += msg_formatter(f"Attempt {attempt} failed due to timeout: {e}")
+        if attempt == max_attempts:
+            admin_msg += msg_formatter("All retry attempts failed.")
+            raise  # Re-raise the exception if it's the last attempt
 
 # TASK: jaba apply hunxa teti bela sabai vanda tallo ko toast msg match garna parxa
 # TASK: server call self defined function rakhnay ani make sure that int(.text) >= 0
