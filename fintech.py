@@ -204,7 +204,7 @@ for attempt in range(1, max_attempts + 1):
     except TimeoutException as e:
         admin_msg += msg_formatter(f"Attempt {attempt} failed due to timeout: {e}")
         if attempt == max_attempts:
-            admin_msg += msg_formatter("All retry attempts failed.")
+            print("All retry attempts failed.")
             raise  # Re-raise the exception if it's the last attempt
 
 # TASK: jaba apply hunxa teti bela sabai vanda tallo ko toast msg match garna parxa
