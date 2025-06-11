@@ -2,7 +2,7 @@ name: Meroshare IPO filler
 
 on:
     schedule:
-        - cron: '*/5 * * * *'
+        - cron: '*/10 * * * *'
 
 defaults:
     run:
