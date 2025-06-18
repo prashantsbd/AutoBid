@@ -22,8 +22,11 @@ def xpath_donot_need(driver, path, value):
 
 def login(company, clientid, pw):
     try:
+        time.sleep(5)
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, "//select2")))
     except:
+        print("Page title is: ", driver.title)
+        print("Current URL: ", driver.current_url)
         driver.refresh()
     driver.find_element(By.XPATH, "//select2").click()
     WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, "//input[@class='select2-search__field']")))
@@ -203,6 +206,7 @@ for attempt in range(1, max_attempts + 1):
         break  # Exit loop if successful
     except TimeoutException as e:
         admin_msg += msg_formatter(f"Attempt {attempt} failed due to timeout: {e}")
+        print(f"Attempt {attempt} failed due to timeout: {e}")
         if attempt == max_attempts:
             print("All retry attempts failed.")
             raise  # Re-raise the exception if it's the last attempt
