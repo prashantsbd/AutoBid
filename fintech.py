@@ -22,7 +22,6 @@ def xpath_donot_need(driver, path, value):
 
 def login(company, clientid, pw):
     try:
-        time.sleep(5)
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, "//select2")))
     except:
         print("Page title is: ", driver.title)
@@ -337,7 +336,6 @@ for element in ClientID:
                 add_to_report()
             else:
                 Status[w] = "NO OFFERING"
-            terminator(admin_msg)
         driver.find_element(By.XPATH, "//ul[@class='header-menu__list']/li[1]/a").click()
     except Exception as e:
         admin_msg += msg_formatter(f"WARNING: exception occured for {ClientID[w]}, {User[w]}")
