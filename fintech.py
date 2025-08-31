@@ -84,7 +84,7 @@ def dynamic_pw_change(company, clientid, pw, user):
     WebDriverWait(driver, 5).until(url_changed)
 
 
-def apply_ipo(crn, mpin):
+def apply_ipo(crn, mpin, right=False):
     WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "selectBank")))
     driver.find_element(By.ID, "selectBank").click()
     driver.find_element(By.XPATH, "//select[@id='selectBank']/option[2]").click()
@@ -93,7 +93,8 @@ def apply_ipo(crn, mpin):
     )
     driver.find_element(By.ID, "accountNumber").click()
     driver.find_element(By.XPATH, "//select[@id='accountNumber']/option[2]").click()
-    driver.find_element(By.ID, "appliedKitta").send_keys(10)
+    if not right:
+        driver.find_element(By.ID, "appliedKitta").send_keys(10)
     driver.find_element(By.ID, "crnNumber").send_keys(crn)
     driver.find_element(By.ID, "disclaimer").click()
     WebDriverWait(driver, 10).until(
@@ -287,7 +288,7 @@ for element in ClientID:
                 each_status.append("2nd_Time")
                 add_to_report()
                 continue
-            if (sharegroup == "Ordinary Shares") and (sharetype == "IPO" or "FPO"):
+            if (sharegroup == "Ordinary Shares") and (sharetype == "IPO" or "FPO" or "RESERVED (RIGHT SHARE)"):
                 if button.text == "Apply":
                     pass
                 elif button.text == "Edit":
@@ -321,10 +322,13 @@ for element in ClientID:
             else:
                 admin_msg += msg_formatter("unknown error occured")
                 quit()
-            apply_ipo(CRN[w], MPin[w])
+            if sharetype == "RESERVED (RIGHT SHARE)":
+                apply_ipo(CRN[w], MPin[w], True)
+            else:
+                apply_ipo(CRN[w], MPin[w])
             apply_count += 1
             # TASK: see the toast msg and optimize
-            admin_msg += msg_formatter(f"{w+1}: applied: {share}, user: {User[w]}")
+            admin_msg += msg_formatter(f"{w+1}: applied {sharetype} : {share}, user: {User[w]}")
             # CASE: paisa xa ke nai herna paryo
             clear_toast()
             each_status.append("Success")
