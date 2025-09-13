@@ -284,14 +284,15 @@ for element in ClientID:
             share = driver.find_element(By.XPATH, f"{mainblock}//span[1]").text
             try:
                 button = driver.find_element(By.XPATH, f"{mainblock}//button")
+                btn_txt = button.text
             except:
                 each_status.append("2nd_Time")
                 add_to_report()
                 continue
             if (sharegroup == "Ordinary Shares") and (sharetype == "IPO" or "FPO" or "RESERVED (RIGHT SHARE)"):
-                if button.text == "Apply":
+                if btn_txt == "Apply" or "Reapply":
                     pass
-                elif button.text == "Edit":
+                elif btn_txt == "Edit":
                     each_status.append("Self")
                     add_to_report()
                     admin_msg += msg_formatter(f"already applied of {User[w]}")
@@ -328,7 +329,11 @@ for element in ClientID:
                 apply_ipo(CRN[w], MPin[w])
             apply_count += 1
             # TASK: see the toast msg and optimize
-            admin_msg += msg_formatter(f"{w+1}: applied {sharetype} : {share}, user: {User[w]}")
+            if btn_txt == "Reapply":
+                event = "re-"
+            else:
+                event = ""
+            admin_msg += msg_formatter(f"{w+1}: {event}applied {sharetype} : {share}, user: {User[w]}")
             # CASE: paisa xa ke nai herna paryo
             clear_toast()
             each_status.append("Success")
