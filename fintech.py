@@ -136,6 +136,10 @@ def chrome_setup():
     # headless = input("Want Head? y/n\n Ans: ")
     # if headless == "n":
     option.add_argument("--headless")
+    option.add_argument("--no-sandbox")
+    option.add_argument("--disable-dev-shm-usage")
+    option.add_argument("--disable-software-rasterizer")
+    option.add_argument("--remote-debugging-port=9222")
     option.add_argument("--window-size=1180,650")
     option.add_argument("--disable-notification")
     option.add_argument("--disable-blink-features=AutomationControlled")
