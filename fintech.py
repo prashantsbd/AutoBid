@@ -135,7 +135,7 @@ def chrome_setup():
     option = webdriver.ChromeOptions()
     # headless = input("Want Head? y/n\n Ans: ")
     # if headless == "n":
-    option.add_argument("--headless")
+    option.add_argument("--headless=new")
     option.add_argument("--no-sandbox")
     option.add_argument("--disable-dev-shm-usage")
     option.add_argument("--disable-software-rasterizer")
