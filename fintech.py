@@ -135,17 +135,17 @@ def chrome_setup():
     option = webdriver.ChromeOptions()
     # headless = input("Want Head? y/n\n Ans: ")
     # if headless == "n":
-    option.add_argument("--headless=new")
-    option.add_argument("--no-sandbox")
-    option.add_argument("--disable-dev-shm-usage")
-    option.add_argument("--disable-software-rasterizer")
-    option.add_argument("--remote-debugging-port=9222")
+    option.add_argument("--headless")
+    # option.add_argument("--no-sandbox")
+    # option.add_argument("--disable-dev-shm-usage")
+    # option.add_argument("--disable-software-rasterizer")
+    # option.add_argument("--remote-debugging-port=9222")
     option.add_argument("--window-size=1180,650")
     option.add_argument("--disable-notification")
     option.add_argument("--disable-blink-features=AutomationControlled")
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-webgl")
-    option.add_argument("--disable-cache")
+    # option.add_argument("--disable-cache")
     driver = webdriver.Chrome(options=option)
     return driver
 
