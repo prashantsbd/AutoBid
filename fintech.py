@@ -195,7 +195,9 @@ initial_url = url[3]
 patience = 50
 
 driver.set_page_load_timeout(patience)
-
+driver.get("https://www.google.com")
+time.sleep(20)
+quit()
 # Ordinary Shares / Debentures / Close Ended Mutual Fund
 max_attempts = 3
 for attempt in range(1, max_attempts + 1):
