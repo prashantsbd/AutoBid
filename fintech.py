@@ -209,6 +209,7 @@ for attempt in range(1, max_attempts + 1):
         print(f"Attempt {attempt} failed due to timeout: {e}")
         if attempt == max_attempts:
             print("All retry attempts failed.")
+            bot_send_msg("Exception Raised !!!\nCouldn't get landing page")
             raise  # Re-raise the exception if it's the last attempt
 
 # TASK: jaba apply hunxa teti bela sabai vanda tallo ko toast msg match garna parxa
