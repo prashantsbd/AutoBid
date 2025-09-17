@@ -11,7 +11,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 
 
-
 def envcall(array):
     load_dotenv()
     return os.environ[array].split(", ")
@@ -196,9 +195,7 @@ initial_url = url[3]
 patience = 50
 
 driver.set_page_load_timeout(patience)
-driver.get(initial_url)
-time.sleep(3)
-quit()
+
 # Ordinary Shares / Debentures / Close Ended Mutual Fund
 max_attempts = 3
 for attempt in range(1, max_attempts + 1):
