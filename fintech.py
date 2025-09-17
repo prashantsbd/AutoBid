@@ -133,19 +133,13 @@ def DB_call():
 
 def chrome_setup():
     option = webdriver.ChromeOptions()
-    # headless = input("Want Head? y/n\n Ans: ")
-    # if headless == "n":
     option.add_argument("--headless")
-    # option.add_argument("--no-sandbox")
-    # option.add_argument("--disable-dev-shm-usage")
-    # option.add_argument("--disable-software-rasterizer")
-    # option.add_argument("--remote-debugging-port=9222")
     option.add_argument("--window-size=1180,650")
     option.add_argument("--disable-notification")
     option.add_argument("--disable-blink-features=AutomationControlled")
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-webgl")
-    # option.add_argument("--disable-cache")
+    option.add_argument("--disable-cache")
     driver = webdriver.Chrome(options=option)
     return driver
 
@@ -294,8 +288,8 @@ for element in ClientID:
                 each_status.append("2nd_Time")
                 add_to_report()
                 continue
-            if (sharegroup == "Ordinary Shares") and (sharetype == "IPO" or "FPO" or "RESERVED (RIGHT SHARE)"):
-                if btn_txt == "Apply" or "Reapply":
+            if (sharegroup == "Ordinary Shares") and sharetype in ["IPO", "FPO", "RESERVED (RIGHT SHARE)"]:
+                if btn_txt in ["Apply", "Reapply"]:
                     pass
                 elif btn_txt == "Edit":
                     each_status.append("Self")
@@ -334,11 +328,7 @@ for element in ClientID:
                 apply_ipo(CRN[w], MPin[w])
             apply_count += 1
             # TASK: see the toast msg and optimize
-            if btn_txt == "Reapply":
-                event = "re-"
-            else:
-                event = ""
-            admin_msg += msg_formatter(f"{w+1}: {event}applied {sharetype} : {share}, user: {User[w]}")
+            admin_msg += msg_formatter(f"{w+1}: applied {sharetype} : {share}, user: {User[w]}")
             # CASE: paisa xa ke nai herna paryo
             clear_toast()
             each_status.append("Success")
