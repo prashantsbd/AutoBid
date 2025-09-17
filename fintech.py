@@ -195,7 +195,7 @@ initial_url = url[3]
 patience = 50
 
 driver.set_page_load_timeout(patience)
-driver.get("https://www.google.com")
+driver.get("https://meroshare.cdsc.com.np/#/login")
 time.sleep(20)
 quit()
 # Ordinary Shares / Debentures / Close Ended Mutual Fund
