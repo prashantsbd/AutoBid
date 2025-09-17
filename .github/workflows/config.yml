@@ -28,7 +28,12 @@ jobs:
             WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
 
         steps:
-            - uses: actions/checkout@v4
+            - name: checkout repo into runner
+              uses: actions/checkout@v4
+            - name: Setup Chrome
+              uses: browser-actions/setup-chrome@v1
+            - name: Setup Chromedriver
+              uses: nanasess/setup-chromedriver@v2
             - name: set-up python base environment
               uses: actions/setup-python@v4
               with:
