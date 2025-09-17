@@ -198,8 +198,8 @@ initial_url = url[3]
 patience = 50
 
 driver.set_page_load_timeout(patience)
-driver.get("https://nepalstock.com/")
-time.sleep(20)
+driver.get(initial_url)
+time.sleep(3)
 quit()
 # Ordinary Shares / Debentures / Close Ended Mutual Fund
 max_attempts = 3
