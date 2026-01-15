@@ -2,3 +2,4 @@ venv/
 credentials.json
 sharp.py
 direct.py
+pwModule.py
