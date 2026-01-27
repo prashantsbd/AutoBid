@@ -75,9 +75,7 @@ class LoginService:
             body = login.json()
             if body.get("errorCode") == 401:
                 return LoginResult.INVALID
-
         body = login.json()
-
         # priority: expired accounts first
         if body.get("accountExpired") or body.get("dematExpired"):
             return LoginResult.EXPIRED
@@ -93,7 +91,6 @@ class LoginService:
         logout_url = os.environ.get("LOGOUT_URL")
         if logout_url and self.session.jwt:
             requests.get(url=logout_url, headers=self.session.headers)
-            print("Logged out!")
         self.session.clear()
 
 
@@ -169,9 +166,42 @@ class ProcessingNecessityChecker:
         return bool(objects)
 
     def _fetch_objects(self):
-        # TODO: fetch objects using root JWT
-        return [{"id": 1}]
-
+        issue_payload = {
+            "filterFieldParams":[
+                {
+                    "key":"companyIssue.companyISIN.script",
+                    "alias":"Scrip"
+                },
+                {
+                    "key":"companyIssue.companyISIN.company.name",
+                    "alias":"Company Name"
+                },
+                {
+                    "key":"companyIssue.assignedToClient.name",
+                    "value":"",
+                    "alias":"Issue Manager"
+                }
+            ],
+            "page":1,
+            "size":10,
+            "searchRoleViewConstants":"VIEW_OPEN_SHARE",
+            "filterDateParams":[
+                {
+                    "key":"minIssueOpenDate",
+                    "condition":"",
+                    "alias":"",
+                    "value":""
+                },
+                {
+                    "key":"maxIssueCloseDate",
+                    "condition":"",
+                    "alias":"",
+                    "value":""
+                 }
+            ]
+        }
+        currentIssue = requests.post(url=os.environ['issues_url'], json=issue_payload, headers=self.login_service.session.headers)
+        return currentIssue.json()['object']
 
 # =========================
 # Google Sheets credential provider
@@ -272,7 +302,6 @@ def run():
     pw_handler = PasswordChangeHandler(session=session, login_service=login_service)
 
     for user in users:
-        print(user)
         result = login_service.login(user)
         if result == LoginResult.FORCE_PW_CHANGE:
             if pw_handler.recover_login(user) != LoginResult.SUCCESS:
@@ -282,7 +311,7 @@ def run():
         elif result != LoginResult.SUCCESS:
             continue
 
-    #     TaskExecutor(session).execute()
+        TaskExecutor(session).execute()
         login_service.logout()
 
 
