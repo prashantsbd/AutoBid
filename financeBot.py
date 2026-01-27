@@ -242,12 +242,12 @@ class BaseTask:
         return os.environ.get("DEFAULT_TASK_URL")
 
 
-class CategoryATask(BaseTask):
+class IPOTask(BaseTask):
     def build_payload(self, obj):
         return {"id": obj["id"], "type": "A"}
 
 
-class CategoryBTask(BaseTask):
+class RightShareTask(BaseTask):
     def build_payload(self, obj):
         return {"id": obj["id"], "type": "B"}
 
@@ -256,8 +256,8 @@ class TaskFactory:
     @staticmethod
     def resolve(obj, session):
         if obj.get("category") == "B":
-            return CategoryBTask(session)
-        return CategoryATask(session)
+            return RightShareTask(session)
+        return IPOTask(session)
 
 
 class TaskExecutor:
@@ -268,16 +268,48 @@ class TaskExecutor:
         objects = self._fetch_objects()
         for obj in objects:
             if obj.get('action') not in ('inProcess', 'edit'):
-                task = TaskFactory.resolve(obj, self.session)
-                task.execute(obj)
+                print(obj)
+                exit()
+                # task = TaskFactory.resolve(obj, self.session)
+                # task.execute(obj)
 
-    def _fetch_objects(self):
-        # TODO: fetch user-specific objects
-        return [
-            {"id": 1, "category": "A"},
-            {"id": 2, "category": "B", "action": "reapply"}
-        ]
-
+    def _fetch_objects(self): 
+        applicable_payload = {
+            "filterFieldParams":[
+                {
+                    "key":"companyIssue.companyISIN.script",
+                    "alias":"Scrip"
+                },
+                {
+                    "key":"companyIssue.companyISIN.company.name",
+                    "alias":"Company Name"
+                },
+                {
+                    "key":"companyIssue.assignedToClient.name",
+                    "value":"",
+                    "alias":"Issue Manager"
+                }
+            ],
+            "page":1,
+            "size":10,
+            "searchRoleViewConstants":"VIEW_APPLICABLE_SHARE",
+            "filterDateParams":[
+                {
+                    "key":"minIssueOpenDate",
+                    "condition":"",
+                    "alias":"",
+                    "value":""
+                },
+                {
+                    "key":"maxIssueCloseDate",
+                    "condition":"",
+                    "alias":"",
+                    "value":""
+                 }
+            ]
+        }
+        applicableIssue = requests.post(url=os.environ['applicable_url'], json=applicable_payload, headers=self.session.headers)
+        return applicableIssue.json()['object']
 
 # =========================
 # Application runner
