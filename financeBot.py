@@ -244,7 +244,19 @@ class BaseTask:
 
 class IPOTask(BaseTask):
     def build_payload(self, obj):
-        return {"id": obj["id"], "type": "A"}
+        return {
+            "demat":"",
+            "boid":"",
+            "accountNumber":"",
+            "customerId":123,
+            "accountBranchId":123,
+            "accountTypeId":1,
+            "appliedKitta":"",
+            "crnNumber":"",
+            "transactionPIN":"",
+            "companyShareId":"",
+            "bankId":""
+        }
 
 
 class RightShareTask(BaseTask):
@@ -255,7 +267,8 @@ class RightShareTask(BaseTask):
 class TaskFactory:
     @staticmethod
     def resolve(obj, session):
-        if obj.get("category") == "B":
+        return None
+        if obj.get("category") == "B":  # Update logic
             return RightShareTask(session)
         return IPOTask(session)
 
@@ -267,11 +280,9 @@ class TaskExecutor:
     def execute(self):
         objects = self._fetch_objects()
         for obj in objects:
-            if obj.get('action') not in ('inProcess', 'edit'):
-                print(obj)
-                exit()
-                # task = TaskFactory.resolve(obj, self.session)
-                # task.execute(obj)
+            task = TaskFactory.resolve(obj, self.session)
+            if task:
+                task.execute(obj)
 
     def _fetch_objects(self): 
         applicable_payload = {
