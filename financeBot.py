@@ -349,3 +349,16 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+
+# for each in response2.json()['object']:
+#     if each['shareTypeName'] == "RESERVED":
+#         isReserved = True
+#         if each['reservationTypeName'] == "FOREIGN EMPLOYMENT":
+#             isForeign = True
+#         elif each['reservationTypeName'] == "RIGHT SHARE":
+#             isRight = True
+#     else:
+#         isPublic = True
+#         break
+
