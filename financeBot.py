@@ -229,7 +229,28 @@ class BaseTask:
     def execute(self, obj):
         payload = self.build_payload(obj)
         url = self.resolve_endpoint(obj)
-        requests.post(url=url, json=payload, headers=self.session.headers)
+        print(requests.post(url=url, json=payload, headers=self.session.headers))
+
+    # def get_bank_details(self):
+    #     resp = requests.get(
+    #         os.environ.get("BANK_DETAILS_URL"),
+    #         headers=self.session.headers
+    #     )
+    #     return resp.json()
+    #
+    # def is_account_valid(self):
+    #     resp = requests.get(
+    #         os.environ.get("ACCOUNT_VALIDITY_URL"),
+    #         headers=self.session.headers
+    #     )
+    #     return resp.status_code == 202  # ACCEPTED
+    #
+    # def get_company_details(self, company_share_id):
+    #     resp = requests.get(
+    #         f"{os.environ.get('COMPANY_DETAILS_URL')}/{company_share_id}",
+    #         headers=self.session.headers
+    #     )
+    #     return resp.json()
 
     def build_payload(self, obj):
         raise NotImplementedError
@@ -262,12 +283,48 @@ class IPOTask(BaseTask):
 class RightShareTask(BaseTask):
     def build_payload(self, obj):
         return {"id": obj["id"], "type": "B"}
+        # bank = self.get_bank_details()
+        # return {
+        #     "customerId": bank["customerId"],
+        #     "accountBranchId": bank["branchId"],
+        #     "accountTypeId": bank["accountTypeId"],
+        #     "demat": bank["demat"],
+        #     "boid": bank["boid"],
+        #     "accountNumber": bank["accountNumber"],
+        #     "crnNumber": bank["crn"],
+        #     "transactionPIN": bank["transactionPin"],
+        #     "companyShareId": obj["companyShareId"],
+        #     "bankId": bank["bankId"],
+        #     "appliedKitta": obj.get("appliedKitta", "")
+        # }
 
 
 class TaskFactory:
     @staticmethod
     def resolve(obj, session):
-        return None
+        # action = obj.get("action")
+        #
+        # # 1. Skip edit / inprocess
+        # if action in ("edit", "inprocess"):
+        #     return None
+        #
+        # # 2. Only ordinary shares
+        # if obj.get("shareGroupName") != "Ordinary Shares":
+        #     return None
+        #
+        # # 3. Fetch company details
+        # base = BaseTask(session)
+        # company = base.get_company_details(obj["companyShareId"])
+        #
+        # # 4. Price limit check
+        # if company["costPerUnit"] > company["priceLimit"]:
+        #     return None
+        #
+        # # 5. Reserved vs IPO
+        # if obj.get("reservationTypeName") == "RIGHT SHARE":
+        #     return RightShareTask(session)
+        #
+        # return IPOTask(session)
         if obj.get("category") == "B":  # Update logic
             return RightShareTask(session)
         return IPOTask(session)
@@ -356,6 +413,7 @@ def run():
 
         TaskExecutor(session).execute()
         login_service.logout()
+        break
 
 
 if __name__ == "__main__":
