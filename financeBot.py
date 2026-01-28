@@ -85,6 +85,7 @@ class LoginService:
 
         jwt_token = login.headers.get("Authorization")
         self.session.set_jwt(jwt_token)
+        # TO DO: user session mai user ko data haru set
         return LoginResult.SUCCESS
 
     def logout(self):
@@ -302,16 +303,16 @@ class RightShareTask(BaseTask):
 class TaskFactory:
     @staticmethod
     def resolve(obj, session):
-        # action = obj.get("action")
-        #
-        # # 1. Skip edit / inprocess
-        # if action in ("edit", "inprocess"):
-        #     return None
-        #
-        # # 2. Only ordinary shares
-        # if obj.get("shareGroupName") != "Ordinary Shares":
-        #     return None
-        #
+        action = obj.get("action")
+
+        # 1. Skip edit / inprocess
+        if action in ("edit", "inprocess"):
+            return None
+
+        # 2. Only ordinary shares
+        if obj.get("shareGroupName") != "Ordinary Shares":
+            return None
+
         # # 3. Fetch company details
         # base = BaseTask(session)
         # company = base.get_company_details(obj["companyShareId"])
@@ -319,15 +320,19 @@ class TaskFactory:
         # # 4. Price limit check
         # if company["costPerUnit"] > company["priceLimit"]:
         #     return None
-        #
-        # # 5. Reserved vs IPO
-        # if obj.get("reservationTypeName") == "RIGHT SHARE":
-        #     return RightShareTask(session)
-        #
-        # return IPOTask(session)
-        if obj.get("category") == "B":  # Update logic
+
+        # 5. Reserved vs IPO
+        if obj.get("reservationTypeName") == "RIGHT SHARE":
             return RightShareTask(session)
-        return IPOTask(session)
+
+        elif obj.get("reservationTypeName") == "FOREIGN EMPLOYMENT":
+            # TO DO foreign employement
+            return None
+
+        elif obj.get("shareTypeName") == "IPO":
+            return IPOTask(session)
+
+        return None
 
 
 class TaskExecutor:
@@ -402,6 +407,8 @@ def run():
     pw_handler = PasswordChangeHandler(session=session, login_service=login_service)
 
     for user in users:
+        print(user)
+        exit
         result = login_service.login(user)
         if result == LoginResult.FORCE_PW_CHANGE:
             if pw_handler.recover_login(user) != LoginResult.SUCCESS:
@@ -418,16 +425,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-
-
-# for each in response2.json()['object']:
-#     if each['shareTypeName'] == "RESERVED":
-#         isReserved = True
-#         if each['reservationTypeName'] == "FOREIGN EMPLOYMENT":
-#             isForeign = True
-#         elif each['reservationTypeName'] == "RIGHT SHARE":
-#             isRight = True
-#     else:
-#         isPublic = True
-#         break
-
