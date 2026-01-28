@@ -28,6 +28,13 @@ class UserContext:
     mpin: Optional[str] = None
     price_limit: Optional[float] = None
     email: Optional[str] = None
+    boid: Optional[str] = None
+    customer_id: Optional[int] = None
+    account_number: Optional[str] = None
+    account_branch_id: Optional[int] = None
+    account_type_id: Optional[int] = None
+    bank_id: Optional[int] = None
+    demat: Optional[str] = None
 
 # =========================
 # Shared session context (reused)
@@ -64,6 +71,40 @@ class LoginResult:
     INVALID = "invalid"
     FORCE_PW_CHANGE = "force_pw_change"
     EXPIRED = "expired"
+
+
+class BankService:
+    def __init__(self, session: SessionContext):
+        self.session = session
+
+    def load_bank_details(self):
+        user = self.session.user
+        # 1. Get bankId
+        bank_resp = requests.get(
+            os.environ["bank_url"],
+            headers=self.session.headers
+        )
+        bank_resp.raise_for_status()
+        bank_id = bank_resp.json()[0]["id"]
+        user.bank_id = bank_id
+
+        # 2. Get bank account details
+        detail_resp = requests.get(
+            f"{os.environ['mybank_url'].rstrip('/')}/{bank_id}",
+            headers=self.session.headers
+        )
+        detail_resp.raise_for_status()
+        data = detail_resp.json()[0]
+
+        # 3. Store once in user context
+        user.customer_id = data["id"]
+        user.account_number = data["accountNumber"]
+        user.account_branch_id = data["accountBranchId"]
+        user.account_type_id = data["accountTypeId"]
+
+        # 4. Get DEMAT details
+        own = requests.get(os.environ["ownDetail_url"], headers=self.session.headers).json()
+        user.demat = own["demat"]
 
 
 # =========================
@@ -109,8 +150,12 @@ class LoginService:
             mpin=creds.get("MPin"),
             price_limit=creds.get("PriceLimit"),
             email=creds.get("Email"),
+            boid=str(creds.get("Username"))
         )
         self.session.set_user(user)
+
+        # ✅ load bank info ONCE
+        BankService(self.session).load_bank_details()
 
         return LoginResult.SUCCESS
 
@@ -119,7 +164,6 @@ class LoginService:
         if logout_url and self.session.jwt:
             requests.get(url=logout_url, headers=self.session.headers)
         self.session.clear()
-
 
 # =========================
 # Password change handler
@@ -242,8 +286,11 @@ class GoogleSheetCredentialProvider:
         client = gspread.authorize(creds)
         workbook = client.open_by_key(sheet_id)
         worksheet = workbook.worksheet('Credentials')
-        return worksheet.get_all_records()
-
+        values = worksheet.get_all_values()
+        headers = values[0]
+        rows = values[1:]
+        return gspread.utils.to_records(headers, rows)
+        
 
 # =========================
 # Task system
@@ -258,13 +305,6 @@ class BaseTask:
         url = self.resolve_endpoint(obj)
         requests.post(url=url, json=payload, headers=self.session.headers)
 
-    # def get_bank_details(self):
-    #     resp = requests.get(
-    #         os.environ.get("BANK_DETAILS_URL"),
-    #         headers=self.session.headers
-    #     )
-    #     return resp.json()
-    #
     # def is_account_valid(self):
     #     resp = requests.get(
     #         os.environ.get("ACCOUNT_VALIDITY_URL"),
@@ -304,17 +344,17 @@ class IPOTask(BaseTask):
         if not user:
             raise RuntimeError("User not logged in")
         return {
-            "demat":"",
-            "boid":"",
-            "accountNumber":"",
-            "customerId":123,
-            "accountBranchId":123,
-            "accountTypeId":1,
-            "appliedKitta": user.kitta,
-            "crnNumber": user.crn,
-            "transactionPIN": user.mpin,
+            "demat":user.demat,
+            "boid":user.boid,
+            "accountNumber":user.account_number,
+            "customerId":user.customer_id,
+            "accountBranchId":user.account_branch_id,
+            "accountTypeId":user.account_type_id,
+            "appliedKitta":user.kitta,
+            "crnNumber":user.crn,
+            "transactionPIN":user.mpin,
             "companyShareId":obj.get("companyShareId"),
-            "bankId":""
+            "bankId":user.bank_id
         }
 
 
@@ -383,7 +423,6 @@ class TaskExecutor:
         objects = self._fetch_objects()
         for obj in objects:
             task = TaskFactory.resolve(obj, self.session)
-            print(f"{os.environ.get("reapply_details_url").rstrip('/')}/{obj.get("companyShareId")}")
             if task:
                 task.execute(obj)
 
@@ -459,7 +498,6 @@ def run():
 
         TaskExecutor(session).execute()
         login_service.logout()
-        break
 
 
 if __name__ == "__main__":
