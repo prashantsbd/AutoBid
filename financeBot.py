@@ -14,8 +14,20 @@ import requests
 import gspread
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
+from dataclasses import dataclass
+from typing import Optional
+
 
 load_dotenv()
+
+
+@dataclass
+class UserContext:
+    crn: Optional[str] = None
+    kitta: Optional[int] = None
+    mpin: Optional[str] = None
+    price_limit: Optional[float] = None
+    email: Optional[str] = None
 
 # =========================
 # Shared session context (reused)
@@ -28,14 +40,18 @@ class SessionContext:
             'Accept': 'application/json, text/plain, */*',
             'Content-Type': 'application/json',
         }
+        self.user: UserContext | None = None
 
     def set_jwt(self, jwt: str):
         self.jwt = jwt
         self.headers["Authorization"] = jwt
 
+    def set_user(self, user: UserContext):
+        self.user = user
 
     def clear(self):
         self.jwt = None
+        self.user = None
         self.headers.pop("Authorization", None)
 
 
@@ -85,7 +101,17 @@ class LoginService:
 
         jwt_token = login.headers.get("Authorization")
         self.session.set_jwt(jwt_token)
-        # TO DO: user session mai user ko data haru set
+
+        # ✅ set user context
+        user = UserContext(
+            crn=creds.get("CRN"),
+            kitta=creds.get("Kitta"),
+            mpin=creds.get("MPin"),
+            price_limit=creds.get("PriceLimit"),
+            email=creds.get("Email"),
+        )
+        self.session.set_user(user)
+
         return LoginResult.SUCCESS
 
     def logout(self):
@@ -230,7 +256,7 @@ class BaseTask:
     def execute(self, obj):
         payload = self.build_payload(obj)
         url = self.resolve_endpoint(obj)
-        print(requests.post(url=url, json=payload, headers=self.session.headers))
+        requests.post(url=url, json=payload, headers=self.session.headers)
 
     # def get_bank_details(self):
     #     resp = requests.get(
@@ -259,13 +285,24 @@ class BaseTask:
     def resolve_endpoint(self, obj):
         if not obj.get('action'):
             return os.environ.get("DEFAULT_TASK_URL")
-        elif obj.get('action') == "reapply":
-            return os.environ.get("REAPPLY_TASK_URL")
+        elif obj.get("action") == "reapply":
+            resp = requests.get(
+                f"{os.environ['REAPPLY_DETAILS_URL'].rstrip('/')}/{obj['companyShareId']}",
+                headers=self.session.headers
+            )
+            resp.raise_for_status()
+
+            applicant_form_id = resp.json().get("applicantFormId")
+
+            return f"{os.environ['REAPPLY_TASK_URL'].rstrip('/')}/{applicant_form_id}"
         return os.environ.get("DEFAULT_TASK_URL")
 
 
 class IPOTask(BaseTask):
     def build_payload(self, obj):
+        user = self.session.user
+        if not user:
+            raise RuntimeError("User not logged in")
         return {
             "demat":"",
             "boid":"",
@@ -273,16 +310,19 @@ class IPOTask(BaseTask):
             "customerId":123,
             "accountBranchId":123,
             "accountTypeId":1,
-            "appliedKitta":"",
-            "crnNumber":"",
-            "transactionPIN":"",
-            "companyShareId":"",
+            "appliedKitta": user.kitta,
+            "crnNumber": user.crn,
+            "transactionPIN": user.mpin,
+            "companyShareId":obj.get("companyShareId"),
             "bankId":""
         }
 
 
 class RightShareTask(BaseTask):
     def build_payload(self, obj):
+        user = self.session.user
+        if not user:
+            raise RuntimeError("User not logged in")
         return {"id": obj["id"], "type": "B"}
         # bank = self.get_bank_details()
         # return {
@@ -343,6 +383,7 @@ class TaskExecutor:
         objects = self._fetch_objects()
         for obj in objects:
             task = TaskFactory.resolve(obj, self.session)
+            print(f"{os.environ.get("reapply_details_url").rstrip('/')}/{obj.get("companyShareId")}")
             if task:
                 task.execute(obj)
 
@@ -407,8 +448,6 @@ def run():
     pw_handler = PasswordChangeHandler(session=session, login_service=login_service)
 
     for user in users:
-        print(user)
-        exit
         result = login_service.login(user)
         if result == LoginResult.FORCE_PW_CHANGE:
             if pw_handler.recover_login(user) != LoginResult.SUCCESS:
