@@ -16,6 +16,7 @@ from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 from dataclasses import dataclass
 from typing import Optional
+from utils import _int_or_default, _nearest_10_up
 
 
 load_dotenv()
@@ -105,6 +106,7 @@ class BankService:
         # 4. Get DEMAT details
         own = requests.get(os.environ["ownDetail_url"], headers=self.session.headers).json()
         user.demat = own["demat"]
+        user.boid = own["boid"]
 
 
 # =========================
@@ -143,14 +145,17 @@ class LoginService:
         jwt_token = login.headers.get("Authorization")
         self.session.set_jwt(jwt_token)
 
+        default_kitta = int(os.environ["default_kitta"])
+        default_price_limit = int(os.environ["default_price_limit"])
+        raw_kitta = _int_or_default(creds.get("Kitta"), default_kitta)
+
         # ✅ set user context
         user = UserContext(
             crn=creds.get("CRN"),
-            kitta=creds.get("Kitta"),
+            kitta=_nearest_10_up(raw_kitta),
             mpin=creds.get("MPin"),
-            price_limit=creds.get("PriceLimit"),
-            email=creds.get("Email"),
-            boid=str(creds.get("Username"))
+            price_limit=_int_or_default(creds.get("PriceLimit"), default_price_limit),
+            email=creds.get("Email")
         )
         self.session.set_user(user)
 
@@ -162,6 +167,7 @@ class LoginService:
     def logout(self):
         logout_url = os.environ.get("LOGOUT_URL")
         if logout_url and self.session.jwt:
+            print(f"Logged out for {self.session.user.boid}")
             requests.get(url=logout_url, headers=self.session.headers)
         self.session.clear()
 
@@ -305,20 +311,6 @@ class BaseTask:
         url = self.resolve_endpoint(obj)
         requests.post(url=url, json=payload, headers=self.session.headers)
 
-    # def is_account_valid(self):
-    #     resp = requests.get(
-    #         os.environ.get("ACCOUNT_VALIDITY_URL"),
-    #         headers=self.session.headers
-    #     )
-    #     return resp.status_code == 202  # ACCEPTED
-    #
-    # def get_company_details(self, company_share_id):
-    #     resp = requests.get(
-    #         f"{os.environ.get('COMPANY_DETAILS_URL')}/{company_share_id}",
-    #         headers=self.session.headers
-    #     )
-    #     return resp.json()
-
     def build_payload(self, obj):
         raise NotImplementedError
 
@@ -363,21 +355,19 @@ class RightShareTask(BaseTask):
         user = self.session.user
         if not user:
             raise RuntimeError("User not logged in")
-        return {"id": obj["id"], "type": "B"}
-        # bank = self.get_bank_details()
-        # return {
-        #     "customerId": bank["customerId"],
-        #     "accountBranchId": bank["branchId"],
-        #     "accountTypeId": bank["accountTypeId"],
-        #     "demat": bank["demat"],
-        #     "boid": bank["boid"],
-        #     "accountNumber": bank["accountNumber"],
-        #     "crnNumber": bank["crn"],
-        #     "transactionPIN": bank["transactionPin"],
-        #     "companyShareId": obj["companyShareId"],
-        #     "bankId": bank["bankId"],
-        #     "appliedKitta": obj.get("appliedKitta", "")
-        # }
+        return {
+            "demat":user.demat,
+            "boid":user.boid,
+            "accountNumber":user.account_number,
+            "customerId":user.customer_id,
+            "accountBranchId":user.account_branch_id,
+            "accountTypeId":user.account_type_id,
+            "appliedKitta":user.kitta,
+            "crnNumber":user.crn,
+            "transactionPIN":user.mpin,
+            "companyShareId":obj.get("companyShareId"),
+            "bankId":user.bank_id
+        }
 
 
 class TaskFactory:
@@ -385,34 +375,44 @@ class TaskFactory:
     def resolve(obj, session):
         action = obj.get("action")
 
-        # 1. Skip edit / inprocess
-        if action in ("edit", "inprocess"):
+        if action in ("edit", "inProcess"):
             return None
 
-        # 2. Only ordinary shares
         if obj.get("shareGroupName") != "Ordinary Shares":
             return None
 
-        # # 3. Fetch company details
-        # base = BaseTask(session)
-        # company = base.get_company_details(obj["companyShareId"])
-        #
-        # # 4. Price limit check
-        # if company["costPerUnit"] > company["priceLimit"]:
-        #     return None
+        if not TaskFactory._is_account_valid(session, obj["companyShareId"]):
+            return None
+        
+        if not TaskFactory._is_affordable(session, obj["companyShareId"]):
+            return None
 
-        # 5. Reserved vs IPO
         if obj.get("reservationTypeName") == "RIGHT SHARE":
             return RightShareTask(session)
 
         elif obj.get("reservationTypeName") == "FOREIGN EMPLOYMENT":
-            # TO DO foreign employement
             return None
 
         elif obj.get("shareTypeName") == "IPO":
             return IPOTask(session)
 
         return None
+
+    @staticmethod
+    def _is_account_valid(session, company_id):
+        base_url = os.environ["canApply_url"].rstrip("/")
+        demat = session.user.demat
+
+        url = f"{base_url}/{company_id}/{demat}"
+
+        resp = requests.get(url, headers=session.headers)
+
+        return resp.status_code == 202
+
+    @staticmethod
+    def _is_affordable(session, company_id):
+        company_resp = requests.get(url=f"{os.environ['company_url'].rstrip('/')}/{company_id}", headers=session.headers).json()
+        return int(company_resp['sharePerUnit']) <= session.user.price_limit
 
 
 class TaskExecutor:
