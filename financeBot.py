@@ -10,11 +10,14 @@ Designed for live editing and extension.
 """
 
 import os
+import json
 import requests
 import gspread
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
+import uuid
 from typing import Optional
 from utils import _int_or_default, _nearest_10_up
 
@@ -36,6 +39,67 @@ class UserContext:
     account_type_id: Optional[int] = None
     bank_id: Optional[int] = None
     demat: Optional[str] = None
+    
+# @dataclass
+# class BatchLog:
+#     batch_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+#     started_at: datetime = field(default_factory=datetime.utcnow)
+#     finished_at: datetime | None = None
+#     status: str = "running"   # running | completed | failed
+#     total_users: int = 0
+#     users_processed: int = 0
+#     users_failed: int = 0
+#     termination_reason: str | None = None
+#
+# @dataclass
+# class EventLog:
+#     timestamp: datetime
+#     batch_id: str
+#     user_id: str | None
+#
+#     event_type: str            # LOGIN, TASK_EVALUATION, TASK_SKIPPED
+#     entity: str | None         # USER, SHARE
+#     entity_id: str | None
+#
+#     decision: str              # PROCEEDED | SKIPPED | FAILED
+#     reason_code: str | None
+#     reason_message: str | None
+#
+#     metadata: dict | None = None
+#
+#     def to_row(self) -> list[str]:
+#         return [
+#             self.timestamp.isoformat(),
+#             self.batch_id,
+#             self.user_id,
+#             self.event_type,
+#             self.entity,
+#             self.entity_id,
+#             self.decision,
+#             self.reason_code,
+#             self.reason_message,
+#             json.dumps(self.metadata or {})
+#         ]
+#
+#
+# class BufferedEventLogger:
+#     def __init__(self, worksheet, flush_threshold: int = 100):
+#         self.worksheet = worksheet
+#         self.buffer: list[EventLog] = []
+#         self.flush_threshold = flush_threshold
+#
+#     def log(self, event: EventLog):
+#         self.buffer.append(event)
+#         if len(self.buffer) >= self.flush_threshold:
+#             self.flush()
+#
+#     def flush(self):
+#         if not self.buffer:
+#             return
+#         rows = [event.to_row() for event in self.buffer]
+#         self.worksheet.append_rows(rows, value_input_option="USER_ENTERED")
+#         self.buffer.clear()
+
 
 # =========================
 # Shared session context (reused)
@@ -61,6 +125,19 @@ class SessionContext:
         self.jwt = None
         self.user = None
         self.headers.pop("Authorization", None)
+
+
+# class ExecutionContext:
+#     def __init__(self, batch: BatchLog, logger: BufferedEventLogger):
+#         self.batch = batch
+#         self.logger = logger
+#         self.session = SessionContext()
+#         self.user_id: str | None = None
+#
+#     def set_user(self, user_id: str, user_ctx: UserContext):
+#         self.user_id = user_id
+#         self.session.set_user(user_ctx)
+
 
 
 # =========================
@@ -374,17 +451,29 @@ class TaskFactory:
     @staticmethod
     def resolve(obj, session):
         action = obj.get("action")
+        companyShareId = obj["companyShareId"]
 
         if action in ("edit", "inProcess"):
+            # ctx.logger.log(EventLog(
+            #     timestamp=datetime.utcnow(),
+            #     batch_id=ctx.batch.batch_id,
+            #     user_id=ctx.user_id,
+            #     event_type="TASK_EVALUATION",
+            #     entity="SHARE",
+            #     entity_id=companyShareId,
+            #     decision="SKIPPED",
+            #     reason_code="ALREADY_IN_PROCESS",
+            #     reason_message="Share already in process"
+            # ))
             return None
 
         if obj.get("shareGroupName") != "Ordinary Shares":
             return None
 
-        if not TaskFactory._is_account_valid(session, obj["companyShareId"]):
+        if not TaskFactory._is_account_valid(session, companyShareId):
             return None
         
-        if not TaskFactory._is_affordable(session, obj["companyShareId"]):
+        if not TaskFactory._is_affordable(session, companyShareId):
             return None
 
         if obj.get("reservationTypeName") == "RIGHT SHARE":
@@ -502,3 +591,43 @@ def run():
 
 if __name__ == "__main__":
     run()
+    
+
+# def run():
+#     batch = BatchLog()
+#     event_ws = gspread_client.open_by_key(...).worksheet("EventLogs")
+#     logger = BufferedEventLogger(event_ws)
+#
+#     ctx = ExecutionContext(batch, logger)
+#     login_service = LoginService(ctx.session)
+#
+#     try:
+#         users = GoogleSheetCredentialProvider().get_users()
+#         batch.total_users = len(users)
+#
+#         for user in users:
+#             ctx.set_user(user["user_id"], build_user_context(user))
+#
+#             result = login_service.login(user, ctx)
+#             if result != LoginResult.SUCCESS:
+#                 batch.users_failed += 1
+#                 logger.flush()
+#                 continue
+#
+#             TaskExecutor(ctx).execute()
+#             login_service.logout()
+#
+#             batch.users_processed += 1
+#             logger.flush()   # 🔑 flush per user
+#
+#         batch.status = "completed"
+#
+#     except Exception as e:
+#         batch.status = "failed"
+#         batch.termination_reason = str(e)
+#         raise
+#
+#     finally:
+#         batch.finished_at = datetime.utcnow()
+#         logger.flush()
+#         persist_batch_log(batch)
