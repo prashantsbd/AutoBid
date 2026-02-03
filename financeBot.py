@@ -149,6 +149,7 @@ class LoginResult:
     INVALID = "invalid"
     FORCE_PW_CHANGE = "force_pw_change"
     EXPIRED = "expired"
+    IMMATURE = "immature"
 
 
 class BankService:
@@ -219,9 +220,13 @@ class LoginService:
             if body.get("errorCode") == 401:
                 return LoginResult.INVALID
         body = login.json()
+
         # priority: expired accounts first
         if body.get("accountExpired") or body.get("dematExpired"):
             return LoginResult.EXPIRED
+
+        if body.get("isTransactionPINReset") or body.get("isTransactionPINNotSetBefore"):
+            return LoginResult.IMMATURE
 
         if body.get("passwordExpired") or body.get("changePassword"):
             return LoginResult.FORCE_PW_CHANGE
