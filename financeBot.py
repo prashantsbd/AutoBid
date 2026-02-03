@@ -164,7 +164,7 @@ class BankService:
             headers=self.session.headers
         )
         bank_resp.raise_for_status()
-        # TODO: [x] ensure this layer
+        # TODO: [ ] ensure this layer
         bank_id = bank_resp.json()[0]["id"]
         user.bank_id = bank_id
 
