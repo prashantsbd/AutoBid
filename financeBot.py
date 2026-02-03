@@ -194,6 +194,13 @@ class LoginService:
     def __init__(self, session: SessionContext):
         self.session = session
 
+    def logout(self):
+        logout_url = os.environ.get("LOGOUT_URL")
+        if logout_url and self.session.jwt:
+            print(f"Logged out for {self.session.user.boid}")
+            requests.get(url=logout_url, headers=self.session.headers)
+        self.session.clear()
+
     def _call_login_api(self, creds: dict[str, int | str]):
         login_url = os.environ.get("LOGIN_URL")
         login_payload = {
@@ -241,13 +248,6 @@ class LoginService:
 
         return LoginResult.SUCCESS
 
-    def logout(self):
-        logout_url = os.environ.get("LOGOUT_URL")
-        if logout_url and self.session.jwt:
-            print(f"Logged out for {self.session.user.boid}")
-            requests.get(url=logout_url, headers=self.session.headers)
-        self.session.clear()
-
 # =========================
 # Password change handler
 # =========================
@@ -258,43 +258,37 @@ class PasswordChangeHandler:
         self.session = session
         self.login_service = login_service
 
+    def _change_password(self, old_pw, new_pw):
+        pw_change_url = os.environ.get("PW_CHANGE_URL")
+        payload = {
+            "oldPassword": old_pw,
+            "newPassword": new_pw,
+            "confirmPassword": new_pw
+        }
+        requests.post(url=pw_change_url, headers=self.session.headers, json=payload)
+
     def recover_login(self, creds: dict[str, int | str]):
         """
         Flow:
         pw-change -> login -> pw-change -> login
         All operations mutate the SAME SessionContext object.
         """
-        original_password = creds['password']
+        original_password = creds['Password']
         temp_pw = "Temp#99"
 
         # change to temp password (uses current JWT)
-        self._change_password(creds["password"], temp_pw)
-        creds["password"] = temp_pw
+        self._change_password(original_password, temp_pw)
+        creds["Password"] = temp_pw
 
         # login with temp password (updates SAME session.jwt)
         self.login_service.login(creds)
 
         # change back to original password (uses new JWT)
         self._change_password(temp_pw, original_password)
-        creds["password"] = original_password
+        creds["Password"] = original_password
 
         # final login (updates SAME session.jwt again)
         return self.login_service.login(creds)
-
-    def _change_password(self, old_pw, new_pw):
-        pw_change_url = os.environ.get("PW_CHANGE_URL")
-        payload = {
-            "oldPassword": old_pw,
-            "newPassword": new_pw
-        }
-        requests.post(url=pw_change_url, headers=self.session.headers, json=payload)
-        pw_change_url = os.environ.get("PW_CHANGE_URL")
-        payload = {
-            "oldPassword": old_pw,
-            "newPassword": new_pw
-        }
-        # uses shared session.headers
-        requests.post(url=pw_change_url, headers=self.session.headers, json=payload)
 
 
 # =========================
