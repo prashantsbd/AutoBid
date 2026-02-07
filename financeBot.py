@@ -396,7 +396,7 @@ class BaseTask:
             return os.environ.get("DEFAULT_TASK_URL")
         elif obj.get("action") == "reapply":
             resp = requests.get(
-                f"{os.environ['REAPPLY_DETAILS_URL'].rstrip('/')}/{obj['companyShareId']}",
+                f"{os.environ['reapply_details_url'].rstrip('/')}/{obj['companyShareId']}",
                 headers=self.session.headers
             )
             resp.raise_for_status()
