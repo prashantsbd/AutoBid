@@ -12,6 +12,7 @@ Designed for live editing and extension.
 import os
 import requests
 import gspread
+import uuid
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 from dataclasses import dataclass 
@@ -84,7 +85,7 @@ class BankService:
         user = self.session.user
         # 1. Get bankId
         bank_resp = requests.get(
-            os.environ["bank_url"],
+            url=os.environ["bank_url"],
             headers=self.session.headers
         )
         bank_resp.raise_for_status()
@@ -94,7 +95,7 @@ class BankService:
 
         # 2. Get bank account details
         detail_resp = requests.get(
-            f"{os.environ['mybank_url'].rstrip('/')}/{bank_id}",
+            url=f"{os.environ['mybank_url'].rstrip('/')}/{bank_id}",
             headers=self.session.headers
         )
         detail_resp.raise_for_status()
@@ -107,7 +108,7 @@ class BankService:
         user.account_type_id = data["accountTypeId"]
 
         # 4. Get DEMAT details
-        own = requests.get(os.environ["ownDetail_url"], headers=self.session.headers).json()
+        own = requests.get(url=os.environ["ownDetail_url"], headers=self.session.headers).json()
         user.demat = own["demat"]
         user.boid = own["boid"]
 
@@ -137,6 +138,7 @@ class LoginService:
         return requests.post(url=login_url, json=login_payload, headers=self.session.headers)
 
     def login(self, creds: dict[str, int | str]) -> str:
+        self.session.clear()
         login = self._call_login_api(creds)
 
         # invalid password
@@ -320,7 +322,7 @@ class BaseTask:
             return os.environ.get("DEFAULT_TASK_URL")
         elif obj.get("action") == "reapply":
             resp = requests.get(
-                f"{os.environ['reapply_details_url'].rstrip('/')}/{obj['companyShareId']}",
+                url=f"{os.environ['reapply_details_url'].rstrip('/')}/{obj['companyShareId']}",
                 headers=self.session.headers
             )
             resp.raise_for_status()
@@ -407,7 +409,7 @@ class TaskFactory:
 
         url = f"{base_url}/{company_id}/{demat}"
 
-        resp = requests.get(url, headers=session.headers)
+        resp = requests.get(url=url, headers=session.headers)
 
         return resp.status_code == 202
 
