@@ -716,10 +716,15 @@ def run():
             "Username": os.environ["root_username"],
         }
 
-        checker = ProcessingNecessityChecker(root_creds, login_service)
-        if not checker.should_process():
-            batch.termination_reason = "No objects found."
-            return
+        try:
+            checker = ProcessingNecessityChecker(root_creds, login_service)
+            if not checker.should_process():
+                batch.termination_reason = "No objects found."
+                batch.status = "SUCCESS"
+                return
+        finally:
+            gsm.flush_execution_logs(session.execution_logs)
+            session.execution_logs.clear()
 
         users = gsm.get_users()
         batch.total_users = len(users)
