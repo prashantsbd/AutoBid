@@ -48,4 +48,4 @@ jobs:
               run: |
                 echo "$GCP_CREDENTIALS_B64" | base64 --decode > credentials.json
             - name: Fill up process
-              run: python ./financeBot..py
+              run: python ./fintech.py
