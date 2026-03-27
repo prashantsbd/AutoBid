@@ -41,17 +41,18 @@ class UserContext:
     bank_id: Optional[int] = None
     demat: Optional[str] = None
 
+
 @dataclass
 class BatchLog:
     batch_id: str
     started_at: datetime
     finished_at: datetime | None = None
-    status: str = "RUNNING"    # RUNNING | SUCCESS | FAILED
+    status: str = "RUNNING"  # RUNNING | SUCCESS | FAILED
     total_users: int = 0
     users_processed: int = 0
     users_failed: int = 0
     termination_reason: str | None = None
-    
+
 
 @dataclass
 class ExecutionLog:
@@ -61,9 +62,10 @@ class ExecutionLog:
     step: str
     action: str
     target: str | None
-    outcome: str                 # OK | SKIPPED | FAILED
+    outcome: str  # OK | SKIPPED | FAILED
     reason: str | None
     http: dict | None = None
+
 
 # =========================
 # Shared session context (reused)
@@ -71,7 +73,7 @@ class ExecutionLog:
 
 
 class SessionContext:
-    def __init__(self, batch_id :str):
+    def __init__(self, batch_id: str):
         self.batch_id = batch_id
         self.jwt = None
         self.headers = {
@@ -110,34 +112,42 @@ class HttpClient:
         path = path.lstrip("/")
         url = f"{self.base_url}/{path}"
         try:
-            resp = requests.request(method, url, headers=self.session.headers, json=json) 
-            self.session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=self.session.batch_id,
-                user_identifier=self.session.user.username if self.session.user else None,
-                step="HTTP",
-                action=f"{method} {path}",
-                target=None,
-                outcome="OK" if resp.ok else "FAILED",
-                reason=None if resp.ok else resp.text[:120],
-                http={
-                    "status": resp.status_code
-                }
-            ))
+            resp = requests.request(
+                method, url, headers=self.session.headers, json=json
+            )
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=self.session.user.username
+                    if self.session.user
+                    else None,
+                    step="HTTP",
+                    action=f"{method} {path}",
+                    target=None,
+                    outcome="OK" if resp.ok else "FAILED",
+                    reason=None if resp.ok else resp.text[:120],
+                    http={"status": resp.status_code},
+                )
+            )
             return resp
-        
+
         except Exception as e:
-            self.session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=self.session.batch_id,
-                user_identifier=self.session.user.username if self.session.user else None,
-                step="HTTP",
-                action=f"{method} {path}",
-                target=None,
-                outcome="FAILED",
-                reason=str(e),
-                http=None
-            ))
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=self.session.user.username
+                    if self.session.user
+                    else None,
+                    step="HTTP",
+                    action=f"{method} {path}",
+                    target=None,
+                    outcome="FAILED",
+                    reason=str(e),
+                    http=None,
+                )
+            )
             raise
 
 
@@ -161,17 +171,18 @@ class BankService:
     def load_bank_details(self):
         user = self.session.user
         # 1. Get bankId
-        bank_resp = self.session.http.get(
-            path=os.environ["bank_path"]
-        )
+        bank_resp = self.session.http.get(path=os.environ["bank_path"])
         bank_resp.raise_for_status()
-        # TODO: [ ] ensure this layer
-        bank_id = bank_resp.json()[0]["id"]
+        banking_info = bank_resp.json()
+        if not banking_info:
+            # User ASBA bank has not registered CRN Number in C-ASBA. 
+            return False
+        bank_id = banking_info[0]["id"]
         user.bank_id = bank_id
 
         # 2. Get bank account details
         detail_resp = self.session.http.get(
-            path=f"{os.environ['mybank_path'].rstrip('/')}/{bank_id}" 
+            path=f"{os.environ['mybank_path'].rstrip('/')}/{bank_id}"
         )
         detail_resp.raise_for_status()
         data = detail_resp.json()[0]
@@ -183,11 +194,11 @@ class BankService:
         user.account_type_id = data["accountTypeId"]
 
         # 4. Get DEMAT details
-        own = self.session.http.get(
-            path=os.environ["ownDetail_path"]
-        ).json()
+        own = self.session.http.get(path=os.environ["ownDetail_path"]).json()
         user.demat = own["demat"]
         user.boid = own["boid"]
+
+        return True
 
 
 # =========================
@@ -212,9 +223,7 @@ class LoginService:
             "username": creds.get("Username"),
             "password": creds.get("Password"),
         }
-        return self.session.http.post(
-            path=login_path, json=login_payload
-        )
+        return self.session.http.post(path=login_path, json=login_payload)
 
     def login(self, creds: dict[str, int | str]) -> str:
         self.session.clear()
@@ -222,16 +231,18 @@ class LoginService:
 
         # invalid password
         if login.status_code == 401:
-            self.session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=self.session.batch_id,
-                user_identifier=creds.get("Username"),
-                step="CREDENTIAL",
-                action="CHECK_PASSWORD",
-                target=None,
-                outcome="SKIPPED",
-                reason="UNAUTHORIZED"
-            ))
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=creds.get("Username"),
+                    step="CREDENTIAL",
+                    action="CHECK_PASSWORD",
+                    target=None,
+                    outcome="SKIPPED",
+                    reason="UNAUTHORIZED",
+                )
+            )
             body = login.json()
             if body.get("errorCode") == 401:
                 return LoginResult.INVALID
@@ -239,42 +250,50 @@ class LoginService:
 
         # priority: expired accounts first
         if body.get("accountExpired") or body.get("dematExpired"):
-            self.session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=self.session.batch_id,
-                user_identifier=creds.get("Username"),
-                step="ACT_HEALTH",
-                action="CHECK_VALIDITY",
-                target=None,
-                outcome="SKIPPED",
-                reason="DEMAT/MEROSHARE EXPIRED"
-            ))
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=creds.get("Username"),
+                    step="ACT_HEALTH",
+                    action="CHECK_VALIDITY",
+                    target=None,
+                    outcome="SKIPPED",
+                    reason="DEMAT/MEROSHARE EXPIRED",
+                )
+            )
             return LoginResult.EXPIRED
 
-        if body.get("isTransactionPINReset") or body.get("isTransactionPINNotSetBefore"):
-            self.session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=self.session.batch_id,
-                user_identifier=creds.get("Username"),
-                step="ACT_HEALTH",
-                action="CHECK_MATURITY",
-                target=None,
-                outcome="SKIPPED",
-                reason="ACCOUNT_IMMATURE"
-            ))
+        if body.get("isTransactionPINReset") or body.get(
+            "isTransactionPINNotSetBefore"
+        ):
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=creds.get("Username"),
+                    step="ACT_HEALTH",
+                    action="CHECK_MATURITY",
+                    target=None,
+                    outcome="SKIPPED",
+                    reason="ACCOUNT_IMMATURE",
+                )
+            )
             return LoginResult.IMMATURE
 
         if body.get("passwordExpired") or body.get("changePassword"):
-            self.session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=self.session.batch_id,
-                user_identifier=creds.get("Username"),
-                step="FORCE",
-                action="PW_SCREENING",
-                target=None,
-                outcome="LOGIN_FREEZE",
-                reason="PW_RESET_FORCELY"
-            ))
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=creds.get("Username"),
+                    step="FORCE",
+                    action="PW_SCREENING",
+                    target=None,
+                    outcome="LOGIN_FREEZE",
+                    reason="PW_RESET_FORCELY",
+                )
+            )
             return LoginResult.FORCE_PW_CHANGE
 
         jwt_token = login.headers.get("Authorization")
@@ -291,12 +310,26 @@ class LoginService:
             mpin=creds.get("MPin"),
             price_limit=_int_or_default(creds.get("PriceLimit"), default_price_limit),
             email=creds.get("Email"),
-            username=creds.get("Username")
+            username=creds.get("Username"),
         )
         self.session.set_user(user)
 
         # ✅ load bank info ONCE
-        BankService(self.session).load_bank_details()
+        if not BankService(self.session).load_bank_details():
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=creds.get("Username"),
+                    step="BANK_HEALTH",
+                    action="CHECK_MATURITY",
+                    target=None,
+                    outcome="SKIPPED",
+                    reason="ASBA bank has not registered CRN Number in C-ASBA",
+                )
+            )
+            self.logout()
+            return LoginResult.IMMATURE
 
         return LoginResult.SUCCESS
 
@@ -393,8 +426,7 @@ class ProcessingNecessityChecker:
             ],
         }
         currentIssue = self.login_service.session.http.post(
-            path=os.environ["issues_path"],
-            json=issue_payload
+            path=os.environ["issues_path"], json=issue_payload
         )
         return currentIssue.json()["object"]
 
@@ -413,40 +445,43 @@ class GoogleSheets:
 
     def get_users(self):
         ws = self.sheet.worksheet("Credentials")
-        values = ws.get_all_values()
-        return gspread.utils.to_records(values[0], values[1:])
+        values = ws.get_all_records(numericise_ignore=["all"])
+        return values
 
     def log_batch(self, batch: BatchLog):
         ws = self.sheet.worksheet("BatchLogs")
-        ws.append_row([
-            batch.batch_id,
-            batch.started_at.isoformat(),
-            batch.finished_at.isoformat() if batch.finished_at else "",
-            batch.status,
-            batch.total_users,
-            batch.users_processed,
-            batch.users_failed,
-            batch.termination_reason or ""
-        ])
-
-
+        ws.append_row(
+            [
+                batch.batch_id,
+                batch.started_at.isoformat(),
+                batch.finished_at.isoformat() if batch.finished_at else "",
+                batch.status,
+                batch.total_users,
+                batch.users_processed,
+                batch.users_failed,
+                batch.termination_reason or "",
+            ]
+        )
 
     def flush_execution_logs(self, logs: list[ExecutionLog]):
         if not logs:
             return
 
         ws = self.sheet.worksheet("ExecutionLogs")
-        rows = [[
-            l.timestamp.isoformat(),
-            l.batch_id,
-            l.user_identifier or "",
-            l.step,
-            l.action,
-            l.target or "",
-            l.outcome,
-            l.reason or "",
-            json.dumps(l.http or {})
-        ] for l in logs]
+        rows = [
+            [
+                l.timestamp.isoformat(),
+                l.batch_id,
+                l.user_identifier or "",
+                l.step,
+                l.action,
+                l.target or "",
+                l.outcome,
+                l.reason or "",
+                json.dumps(l.http or {}),
+            ]
+            for l in logs
+        ]
         ws.append_rows(rows)
 
 
@@ -473,7 +508,6 @@ class BaseTask:
         elif obj.get("action") == "reapply":
             resp = self.session.http.get(
                 path=f"{os.environ['reapply_details_path'].rstrip('/')}/{obj['companyShareId']}",
-                
             )
             resp.raise_for_status()
 
@@ -531,111 +565,127 @@ class TaskFactory:
 
         # already in process
         if obj.get("action") in ("edit", "inProcess"):
-            session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=session.batch_id,
-                user_identifier=user_id,
-                step="ANALYZE",
-                action="CHECK_SHARE_STATE",
-                target=company_id,
-                outcome="SKIPPED",
-                reason="ALREADY_IN_PROCESS"
-            ))
+            session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=session.batch_id,
+                    user_identifier=user_id,
+                    step="ANALYZE",
+                    action="CHECK_SHARE_STATE",
+                    target=company_id,
+                    outcome="SKIPPED",
+                    reason="ALREADY_IN_PROCESS",
+                )
+            )
             return None
 
         # share group mismatch
         if obj.get("shareGroupName") != "Ordinary Shares":
-            session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=session.batch_id,
-                user_identifier=user_id,
-                step="ANALYZE",
-                action="CHECK_SHARE_GROUP",
-                target=company_id,
-                outcome="SKIPPED",
-                reason="NON_ORDINARY_SHARE"
-            ))
+            session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=session.batch_id,
+                    user_identifier=user_id,
+                    step="ANALYZE",
+                    action="CHECK_SHARE_GROUP",
+                    target=company_id,
+                    outcome="SKIPPED",
+                    reason="NON_ORDINARY_SHARE",
+                )
+            )
             return None
 
         # account validity
         if not TaskFactory._is_account_valid(session, company_id):
-            session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=session.batch_id,
-                user_identifier=user_id,
-                step="ANALYZE",
-                action="CHECK_ACCOUNT_VALID",
-                target=company_id,
-                outcome="SKIPPED",
-                reason="ACCOUNT_NOT_ELIGIBLE"
-            ))
+            session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=session.batch_id,
+                    user_identifier=user_id,
+                    step="ANALYZE",
+                    action="CHECK_ACCOUNT_VALID",
+                    target=company_id,
+                    outcome="SKIPPED",
+                    reason="ACCOUNT_NOT_ELIGIBLE",
+                )
+            )
             return None
 
         # affordability
         if not TaskFactory._is_affordable(session, company_id):
-            session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=session.batch_id,
-                user_identifier=user_id,
-                step="ANALYZE",
-                action="CHECK_AFFORDABILITY",
-                target=company_id,
-                outcome="SKIPPED",
-                reason="UNAFFORDABLE"
-            ))
+            session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=session.batch_id,
+                    user_identifier=user_id,
+                    step="ANALYZE",
+                    action="CHECK_AFFORDABILITY",
+                    target=company_id,
+                    outcome="SKIPPED",
+                    reason="UNAFFORDABLE",
+                )
+            )
             return None
 
         # task resolution
         if obj.get("reservationTypeName") == "RIGHT SHARE":
-            session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=session.batch_id,
-                user_identifier=user_id,
-                step="RESOLVE",
-                action="RIGHT_SHARE_TASK",
-                target=company_id,
-                outcome="OK",
-                reason=None
-            ))
+            session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=session.batch_id,
+                    user_identifier=user_id,
+                    step="RESOLVE",
+                    action="RIGHT_SHARE_TASK",
+                    target=company_id,
+                    outcome="OK",
+                    reason=None,
+                )
+            )
             return RightShareTask(session)
 
         if obj.get("reservationTypeName") == "FOREIGN EMPLOYMENT":
-            session.execution_logs.append(ExecutionLog(
-                timestamp=datetime.now(),
-                batch_id=session.batch_id,
-                user_identifier=user_id,
-                step="RESOLVE",
-                action="FOREIGN_EMPLOYMENT",
-                target=company_id,
-                outcome="SKIPPED",
-                reason="NOT_SUPPORTED"
-            ))
+            session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=session.batch_id,
+                    user_identifier=user_id,
+                    step="RESOLVE",
+                    action="FOREIGN_EMPLOYMENT",
+                    target=company_id,
+                    outcome="SKIPPED",
+                    reason="NOT_SUPPORTED",
+                )
+            )
             return None
 
         if obj.get("shareTypeName") == "IPO":
-            session.execution_logs.append(ExecutionLog(
+            session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=session.batch_id,
+                    user_identifier=user_id,
+                    step="RESOLVE",
+                    action="IPO_TASK",
+                    target=company_id,
+                    outcome="OK",
+                    reason=None,
+                )
+            )
+            return IPOTask(session)
+
+        # fallback
+        session.execution_logs.append(
+            ExecutionLog(
                 timestamp=datetime.now(),
                 batch_id=session.batch_id,
                 user_identifier=user_id,
                 step="RESOLVE",
-                action="IPO_TASK",
+                action="UNKNOWN_TASK_TYPE",
                 target=company_id,
-                outcome="OK",
-                reason=None
-            ))
-            return IPOTask(session)
-
-        # fallback
-        session.execution_logs.append(ExecutionLog(
-            timestamp=datetime.now(),
-            batch_id=session.batch_id,
-            user_identifier=user_id,
-            step="RESOLVE",
-            action="UNKNOWN_TASK_TYPE",
-            target=company_id,
-            outcome="SKIPPED",
-            reason="NO_MATCHING_TASK"
-        ))
+                outcome="SKIPPED",
+                reason="NO_MATCHING_TASK",
+            )
+        )
         return None
 
     @staticmethod
@@ -691,8 +741,7 @@ class TaskExecutor:
             ],
         }
         applicableIssue = self.session.http.post(
-            path=os.environ["applicable_path"],
-            json=applicable_payload
+            path=os.environ["applicable_path"], json=applicable_payload
         )
         return applicableIssue.json()["object"]
 
@@ -759,6 +808,7 @@ def run():
     finally:
         batch.finished_at = datetime.now()
         gsm.log_batch(batch)
+
 
 if __name__ == "__main__":
     run()
