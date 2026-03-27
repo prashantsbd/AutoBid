@@ -50,6 +50,7 @@ jobs:
             
             SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
             GCP_CREDENTIALS_B64: ${{ secrets.GCP_CREDENTIALS_B64 }}
+            TZ: 'Asia/Kathmandu'
 
         steps:
             - name: checkout repo into runner
