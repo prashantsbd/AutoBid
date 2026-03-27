@@ -26,6 +26,28 @@ jobs:
             CRN: ${{ secrets.CRN }}
             URL: ${{ secrets.URL }}
             WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
+
+            base_url : ${{ secrets.base_url }}
+            LOGIN_PATH : ${{ secrets.LOGIN_PATH }}
+            LOGOUT_PATH : ${{ secrets.LOGOUT_PATH }}
+            PW_CHANGE_PATH : ${{ secrets.PW_CHANGE_PATH }}
+            DEFAULT_TASK_PATH : ${{ secrets.DEFAULT_TASK_PATH }}
+            REAPPLY_TASK_PATH : ${{ secrets.REAPPLY_TASK_PATH }}
+            root_clientId : ${{ secrets.root_clientId }}
+            root_password : ${{ secrets.root_password }}
+            root_username : ${{ secrets.root_username }}
+            default_kitta : ${{ secrets.default_kitta }}
+            default_price_limit : ${{ secrets.default_price_limit }}
+            applicable_path : ${{ secrets.applicable_path }}
+            issues_path : ${{ secrets.issues_path }}
+            ownDetail_path : ${{ secrets.ownDetail_path }}
+            bank_path : ${{ secrets.bank_path }}
+            mybank_path : ${{ secrets.mybank_path }}
+            canApply_path : ${{ secrets.canApply_path }}
+            company_path : ${{ secrets.company_path }}
+            reapply_details_path : ${{ secrets.reapply_details_path }}
+            pin_change_path : ${{ secrets.pin_change_path }}
+            
             SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
             GCP_CREDENTIALS_B64: ${{ secrets.GCP_CREDENTIALS_B64 }}
 
