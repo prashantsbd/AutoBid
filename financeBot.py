@@ -347,6 +347,7 @@ class PasswordChangeHandler:
 
     def _change_password(self, old_pw, new_pw):
         pw_change_path = os.environ.get("PW_CHANGE_PATH")
+        # BUG report
         payload = {
             "oldPassword": old_pw,
             "newPassword": new_pw,
