@@ -177,7 +177,8 @@ class BankService:
         if not banking_info:
             # User ASBA bank has not registered CRN Number in C-ASBA. 
             return False
-        bank_id = banking_info[0]["id"]
+        b_index = len(banking_info) - 1
+        bank_id = banking_info[b_index]["id"]
         user.bank_id = bank_id
 
         # 2. Get bank account details
