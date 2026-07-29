@@ -54,13 +54,16 @@ jobs:
 
         steps:
             - name: checkout repo into runner
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
+
             - name: Setup Chrome
-              uses: browser-actions/setup-chrome@v1
+              uses: browser-actions/setup-chrome@v2
+
             - name: Setup Chromedriver
               uses: nanasess/setup-chromedriver@v2
+
             - name: set-up python base environment
-              uses: actions/setup-python@v4
+              uses: actions/setup-python@v5
               with:
                 python-version: ${{ matrix.python-version }}
             - name: Install Necessary Dependencies
