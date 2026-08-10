@@ -1,3 +1,5 @@
+# TODO: Add feature to backtrack application history and know about allotment status of previous applications.
+# This will help in making informed decisions for future applications. And also inform users on account fail.
 """
 Rough, editable skeleton for:
 - Root processing necessity check (same login flow as users)
@@ -27,6 +29,7 @@ load_dotenv()
 
 @dataclass
 class UserContext:
+    host_id: Optional[int] = None
     username: Optional[str] = None
     crn: Optional[str] = None
     kitta: Optional[int] = None
@@ -177,6 +180,8 @@ class BankService:
         if not banking_info:
             # User ASBA bank has not registered CRN Number in C-ASBA. 
             return False
+
+        # BUG: assuming the last one is the correct bank - need a better way to identify the right bank if multiple exist
         b_index = len(banking_info) - 1
         bank_id = banking_info[b_index]["id"]
         user.bank_id = bank_id
@@ -306,6 +311,7 @@ class LoginService:
 
         # ✅ set user context
         user = UserContext(
+            host_id=creds.get("HostId"),
             crn=creds.get("CRN"),
             kitta=_nearest_10_up(raw_kitta),
             mpin=creds.get("MPin"),
@@ -447,6 +453,11 @@ class GoogleSheets:
 
     def get_users(self):
         ws = self.sheet.worksheet("Credentials")
+        values = ws.get_all_records(numericise_ignore=["all"])
+        return values
+
+    def get_account_hosts(self):
+        ws = self.sheet.worksheet("ActHosts")
         values = ws.get_all_records(numericise_ignore=["all"])
         return values
 
@@ -778,6 +789,7 @@ def run():
             session.execution_logs.clear()
 
         users = gsm.get_users()
+        hosts = gsm.get_account_hosts()
         batch.total_users = len(users)
         pw_handler = PasswordChangeHandler(session=session, login_service=login_service)
 
