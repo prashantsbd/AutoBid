@@ -287,21 +287,6 @@ class LoginService:
             )
             return LoginResult.IMMATURE
 
-        if body.get("passwordExpired") or body.get("changePassword"):
-            self.session.execution_logs.append(
-                ExecutionLog(
-                    timestamp=datetime.now(),
-                    batch_id=self.session.batch_id,
-                    user_identifier=creds.get("Username"),
-                    step="FORCE",
-                    action="PW_SCREENING",
-                    target=None,
-                    outcome="LOGIN_FREEZE",
-                    reason="PW_RESET_FORCELY",
-                )
-            )
-            return LoginResult.FORCE_PW_CHANGE
-
         jwt_token = login.headers.get("Authorization")
         self.session.set_jwt(jwt_token)
 
@@ -320,6 +305,21 @@ class LoginService:
             username=creds.get("Username"),
         )
         self.session.set_user(user)
+
+        if body.get("passwordExpired") or body.get("changePassword"):
+            self.session.execution_logs.append(
+                ExecutionLog(
+                    timestamp=datetime.now(),
+                    batch_id=self.session.batch_id,
+                    user_identifier=creds.get("Username"),
+                    step="FORCE",
+                    action="PW_SCREENING",
+                    target=None,
+                    outcome="LOGIN_FREEZE",
+                    reason="PW_RESET_FORCELY",
+                )
+            )
+            return LoginResult.FORCE_PW_CHANGE
 
         # ✅ load bank info ONCE
         if not BankService(self.session).load_bank_details():
@@ -354,7 +354,7 @@ class PasswordChangeHandler:
 
     def _change_password(self, old_pw, new_pw):
         pw_change_path = os.environ.get("PW_CHANGE_PATH")
-        # BUG report
+        # BUG report --> RESOLVED
         payload = {
             "oldPassword": old_pw,
             "newPassword": new_pw,
