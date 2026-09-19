@@ -34,7 +34,7 @@ class UserContext:
     crn: Optional[str] = None
     kitta: Optional[int] = None
     mpin: Optional[str] = None
-    price_limit: Optional[float] = None
+    price_up_limit: Optional[float] = None
     email: Optional[str] = None
     boid: Optional[str] = None
     customer_id: Optional[int] = None
@@ -291,7 +291,7 @@ class LoginService:
         self.session.set_jwt(jwt_token)
 
         default_kitta = int(os.environ["default_kitta"])
-        default_price_limit = int(os.environ["default_price_limit"])
+        default_price_up_limit = int(os.environ["default_price_up_limit"])
         raw_kitta = _int_or_default(creds.get("Kitta"), default_kitta)
 
         # ✅ set user context
@@ -300,7 +300,7 @@ class LoginService:
             crn=creds.get("CRN"),
             kitta=_nearest_10_up(raw_kitta),
             mpin=creds.get("MPin"),
-            price_limit=_int_or_default(creds.get("PriceLimit"), default_price_limit),
+            price_up_limit=_int_or_default(creds.get("PriceUpLimit"), default_price_up_limit),
             email=creds.get("Email"),
             username=creds.get("Username"),
         )
@@ -717,7 +717,10 @@ class TaskFactory:
         company_resp = session.http.get(
             path=f"{os.environ['company_path'].rstrip('/')}/{company_id}"
         ).json()
-        return int(company_resp["sharePerUnit"]) <= session.user.price_limit
+        # Management Decision - If the share price is less than the default low limit, we will allow the user to apply. Otherwise, we will check if the share price is within the user's price limit.
+        # Don't ask everything from user the management forcely determines the lowest price limit to which system works
+        # No need to bind it with user session context because it's system level decision and not user level decision. So, we can use the environment variable directly.
+        return  int(os.environ['default_price_low_limit']) < int(company_resp["sharePerUnit"]) <= session.user.price_up_limit
 
 
 class TaskExecutor:
@@ -809,6 +812,7 @@ def run():
                 TaskExecutor(session).execute()
                 login_service.logout()
                 batch.users_processed += 1
+
             finally:
                 gsm.flush_execution_logs(session.execution_logs)
                 session.execution_logs.clear()

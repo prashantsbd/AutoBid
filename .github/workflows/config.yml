@@ -37,7 +37,8 @@ jobs:
             root_password : ${{ secrets.root_password }}
             root_username : ${{ secrets.root_username }}
             default_kitta : ${{ secrets.default_kitta }}
-            default_price_limit : ${{ secrets.default_price_limit }}
+            default_price_up_limit : ${{ secrets.default_price_up_limit }}
+            default_price_low_limit : ${{ secrets.default_price_low_limit }}
             applicable_path : ${{ secrets.applicable_path }}
             issues_path : ${{ secrets.issues_path }}
             ownDetail_path : ${{ secrets.ownDetail_path }}
