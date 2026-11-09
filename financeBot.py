@@ -19,7 +19,7 @@ import gspread
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 from utils import _int_or_default, _nearest_10_up
 
@@ -31,9 +31,9 @@ load_dotenv()
 class UserContext:
     host_id: Optional[int] = None
     username: Optional[str] = None
-    crn: Optional[str] = None
     kitta: Optional[int] = None
-    mpin: Optional[str] = None
+    crn: Optional[str] = field(default=None, repr=False)
+    mpin: Optional[str] = field(default=None, repr=False)
     price_up_limit: Optional[float] = None
     email: Optional[str] = None
     boid: Optional[str] = None
@@ -233,6 +233,7 @@ class LoginService:
 
     def login(self, creds: dict[str, int | str]) -> str:
         self.session.clear()
+        # Todo: decryppt creds and Mpin  in future
         login = self._call_login_api(creds)
 
         # invalid password
@@ -798,6 +799,7 @@ def run():
 
         for user in users:
             try:
+                # Decrypt before login
                 result = login_service.login(user)
                 if result == LoginResult.FORCE_PW_CHANGE:
                     if pw_handler.recover_login(user) != LoginResult.SUCCESS:

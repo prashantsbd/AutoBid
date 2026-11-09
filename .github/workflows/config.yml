@@ -48,6 +48,10 @@ jobs:
             company_path : ${{ secrets.company_path }}
             reapply_details_path : ${{ secrets.reapply_details_path }}
             pin_change_path : ${{ secrets.pin_change_path }}
+
+            CREDENTIAL_PRIVATE_KEY: ${{ secrets.CREDENTIAL_PRIVATE_KEY }}
+            CREDENTIAL_PUBLIC_KEY : ${{ secrets.CREDENTIAL_PUBLIC_KEY }} 
+            CREDENTIAL_PRIVATE_KEY_PASSPHRASE : ${{ secrets.CREDENTIAL_PRIVATE_KEY_PASSPHRASE }} 
             
             SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
             GCP_CREDENTIALS_B64: ${{ secrets.GCP_CREDENTIALS_B64 }}

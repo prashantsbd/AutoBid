@@ -6,3 +6,7 @@ direct.py
 pwModule.py
 do.MD
 .env
+Context.txt
+credential_decryptor.py
+encrypt_sheet.py
+

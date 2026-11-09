@@ -1,8 +1,9 @@
 attrs==25.3.0
 cachetools==6.2.4
 certifi==2025.8.3
-cffi==1.17.1
+cffi==2.1.1
 charset-normalizer==3.4.2
+cryptography==50.0.2
 google-auth==2.41.1
 google-auth-oauthlib==1.2.3
 gspread==6.2.1
